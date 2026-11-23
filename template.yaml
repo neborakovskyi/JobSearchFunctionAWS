@@ -1,0 +1,68 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Daily .NET/Angular job search — scrapes Djinni, DOU, Work.ua, Robota.ua
+  and delivers a scored HTML report via Gmail at 09:30 Kyiv time.
+
+# ── Parameters (passed at deploy time, never stored in source) ──────────────
+Parameters:
+  GmailSmtpUser:
+    Type: String
+    Description: Gmail address used to send the report
+  GmailSmtpPassword:
+    Type: String
+    NoEcho: true
+    Description: Gmail App Password (16 chars, spaces allowed)
+  RecipientEmail:
+    Type: String
+    Default: rostislav.neborakovskiy@gmail.com
+    Description: Destination email address
+
+# ── Globals ──────────────────────────────────────────────────────────────────
+Globals:
+  Function:
+    Runtime: dotnet8
+    MemorySize: 256
+    Timeout: 120
+    # Logs go to CloudWatch Logs (free tier: 5 GB/month, 10 GB-month storage)
+    LoggingConfig:
+      LogFormat: JSON
+      ApplicationLogLevel: INFO
+
+# ── Resources ────────────────────────────────────────────────────────────────
+Resources:
+
+  JobSearchFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: job-search-daily
+      Handler: JobSearchFunction          # assembly name (top-level bootstrap)
+      CodeUri: ./
+      Description: Scrapes Ukrainian IT job boards and emails a ranked report
+      Environment:
+        Variables:
+          GmailSmtpUser:     !Ref GmailSmtpUser
+          GmailSmtpPassword: !Ref GmailSmtpPassword
+          RecipientEmail:    !Ref RecipientEmail
+      Events:
+        DailySchedule:
+          Type: ScheduleV2                # EventBridge Scheduler (supports TZ)
+          Properties:
+            Name: job-search-daily-trigger
+            Description: Fires every weekday at 09:30 Kyiv time
+            # cron(min hour day month day-of-week year)
+            ScheduleExpression: "cron(30 9 * * ? *)"
+            ScheduleExpressionTimezone: "Europe/Kiev"
+            State: ENABLED
+            RetryPolicy:
+              MaximumRetryAttempts: 1
+              MaximumEventAgeInSeconds: 3600
+
+# ── Outputs ───────────────────────────────────────────────────────────────────
+Outputs:
+  FunctionArn:
+    Description: Lambda function ARN
+    Value: !GetAtt JobSearchFunction.Arn
+  FunctionName:
+    Description: Lambda function name
+    Value: !Ref JobSearchFunction

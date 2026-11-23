@@ -1,0 +1,11 @@
+{
+  "profile"             : "default",
+  "region"              : "us-west-2",
+  "configuration"       : "Release",
+  "function-runtime"    : "dotnet8",
+  "function-memory-size": 256,
+  "function-timeout"    : 120,
+  "function-handler"    : "JobSearchFunction",
+  "package-type"        : "zip",
+  "function-name"       : "job-search-daily"
+}

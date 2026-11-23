@@ -1,0 +1,43 @@
+name: Deploy Job Search Lambda
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # manual trigger from GitHub UI
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  AWS_REGION: eu-west-1
+  FUNCTION_NAME: job-search-daily
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      - name: Install Amazon Lambda Tools
+        run: dotnet tool install -g Amazon.Lambda.Tools
+
+      - name: Restore & build
+        run: dotnet build --configuration Release
+
+      - name: Deploy Lambda function
+        run: |
+          dotnet lambda deploy-function ${{ env.FUNCTION_NAME }} \
+            --region ${{ env.AWS_REGION }} \
+            --config-file aws-lambda-tools-defaults.json

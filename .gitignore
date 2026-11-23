@@ -1,0 +1,19 @@
+## Build output
+bin/
+obj/
+.aws-sam/
+.kombai/
+
+## Lambda package
+*.zip
+
+## Sensitive — never commit
+appsettings.Local.json
+samconfig.toml
+response.json
+
+## IDE
+.idea/
+.vscode/
+*.user
+*.suo
