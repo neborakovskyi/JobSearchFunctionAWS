@@ -3,6 +3,7 @@ bin/
 obj/
 .aws-sam/
 .kombai/
+.vs/
 
 ## Lambda package
 *.zip
